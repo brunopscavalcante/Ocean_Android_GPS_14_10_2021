@@ -1,13 +1,20 @@
 package com.oceanbrasil.ocean_android_gps_14_10_2021
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.LocationManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.Circle
 import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
@@ -50,5 +57,58 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         mMap.addCircle(CircleOptions().center(saoPaulo).radius(50.0).strokeColor(Color.parseColor("#000000E7")).strokeWidth(1f).fillColor(Color.parseColor("#537CDBE7")))
 
+        iniciarLocalizacao()
+    }
+
+    private fun iniciarLocalizacao() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        val locationProvider = LocationManager.GPS_PROVIDER
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Caso não tenha permissões, solicita
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
+                1
+            )
+
+            // Encerra a execução do método
+            return
+        }
+
+        val ultimaLocalizacao = locationManager.getLastKnownLocation(locationProvider)
+
+//        Toast.makeText(this, ultimaLocalizacao.toString(), Toast.LENGTH_LONG).show()
+
+        ultimaLocalizacao?.let {
+            val latLng = LatLng(it.latitude, it.longitude)
+
+            mMap.addMarker(MarkerOptions().position(latLng).title("Última localização"))
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16.25f))
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            iniciarLocalizacao()
+        }
     }
 }
